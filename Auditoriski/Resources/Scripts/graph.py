@@ -6,6 +6,7 @@ class Graph(object):
 
     def __init__(self, graph={}):
         self.graph = graph
+        self.visual = [] 
 
     def vertices(self):
         return list(self.graph.keys())
@@ -24,8 +25,10 @@ class Graph(object):
     def add_edge(self, edge, reverse=True):
         vertex1, vertex2 = edge
         self.graph[vertex1].append(vertex2)
+        self.visual.append([vertex1, vertex2])
         if reverse:
             self.graph[vertex2].append(vertex1)
+            self.visual.append([vertex2, vertex1])
 
     def remove_vertex(self, vertex_to_remove):
         if vertex_to_remove in self.graph:
@@ -41,7 +44,7 @@ class Graph(object):
         if reverse and vertex1 not in self.graph[vertex2]:
             self.graph[vertex2].append(vertex1)
 
-    def search(self, algo, starting_vertex, goal_vertex, verbose=False):
+    def search_find_path(self, algo, starting_vertex, goal_vertex, verbose=False):
 
         if starting_vertex == goal_vertex:
             if verbose:
@@ -84,9 +87,24 @@ class Graph(object):
             if verbose:
                 print()
 
+    def search_traversal(self, initial_state, algo):
+        visited = {initial_state}
+        states_queue = deque([initial_state])
+        while states_queue:
+            state_to_expand = states_queue.popleft()
+            for next_state in  self.graph[state_to_expand]:
+                if next_state not in visited:
+                    if next_state.count(None) == 0:
+                        return next_state
+                    visited.add(next_state)
+                    if algo == 'dfs':
+                        states_queue.appendleft(next_state)
+                    elif algo == 'bfs':
+                        states_queue.append(next_state)
+        return
     def visualize(self):
         G = nx.Graph()
-        G.add_edges_from(self.edges())
+        G.add_edges_from(self.visual)
         nx.draw_networkx(G)
         plt.show()
 
