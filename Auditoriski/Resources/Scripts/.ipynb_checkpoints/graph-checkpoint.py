@@ -1,4 +1,5 @@
 import heapq
+import math
 import networkx as nx 
 import matplotlib.pyplot as plt 
 from collections import deque
@@ -7,6 +8,7 @@ class Graph(object):
 
     def __init__(self, graph={}):
         self.graph = graph
+        self.result = []
 
     def vertices(self):
         return list(self.graph.keys())
@@ -76,6 +78,7 @@ class Graph(object):
                         if verbose:
                             print('Го пронајдовме посакуваниот јазол {}. Патеката да стигнеме до тука е {}'
                                   .format(neighbour, vertex_list + [neighbour]))
+                        self.result = vertex_list + [neighbour]
                         return vertex_list + [neighbour]
                     visited.add(neighbour)
                     if algo == "bfs":
@@ -100,20 +103,27 @@ class Graph(object):
                     elif algo == 'bfs':
                         states_queue.append(next_state)
         return
+
     def visualize(self):
+        color_map = []
         G = nx.Graph()
+        G.add_nodes_from(self.vertices())
         G.add_edges_from(self.edges())
-        nx.draw_networkx(G)
+        for vertex in self.vertices():
+            color_map.append('green' if vertex in self.result else 'blue')
+        nx.draw(G, node_color=color_map, with_labels=True)
         plt.show()
 
     def __str__(self):
         return f'Vertices: {self.vertices()}\n Edges: {self.edges()}'
 
 
-
 class WeightedGraph(object):
-    def __init__(self,graph={}):
+    def __init__(self, cords={}, graph={}):
         self.graph = graph
+        self.result = []
+        self.cords = cords
+        self.count = 0
 
     def add_vertex(self, vertex):
         if vertex not in self.graph:
@@ -146,6 +156,7 @@ class WeightedGraph(object):
             if verbose:
                 print('Почетниот и бараниот јазол се исти')
             return
+        self.count = 0
         expanded = set()
         queue = [(0, [starting_vertex])]
         heapq.heapify(queue)
@@ -158,10 +169,12 @@ class WeightedGraph(object):
                 print()
             weight, vertex_list = heapq.heappop(queue)
             vertex_to_expand = vertex_list[-1]
+            self.count += 1
             if vertex_to_expand == goal_vertex:
                 if verbose:
                     print('Го пронајдовме посакуваниот јазол {}. Патеката да стигнеме до тука е {} со цена {}'
                           .format(vertex_to_expand, vertex_list, weight))
+                self.result = vertex_list
                 return weight, vertex_list
             if vertex_to_expand in expanded:
                 if verbose:
@@ -182,11 +195,45 @@ class WeightedGraph(object):
             if verbose:
                 print()
 
-    def visualize(self):
+    def a_star_search(self, starting_vertex, goal_vertex, alpha):
+        self.count = 0
+        expanded = set()
+        queue = [((0, 0), [starting_vertex])]
+        heapq.heapify(queue)
+        while queue:
+            weight_tupple, vertex_list = heapq.heappop(queue)
+            current_a_star_weight, current_path_weight = weight_tupple
+            vertex_to_expand = vertex_list[-1]
+            self.count += 1
+            if vertex_to_expand == goal_vertex:
+                self.result = vertex_list
+                return weight_tupple, vertex_list
+
+            if vertex_to_expand in expanded:
+                continue
+
+            for neighbour, new_weight in self.neighbours(vertex_to_expand):
+                if neighbour not in expanded:
+                    heuristic = self.euclidean_distance(neighbour, goal_vertex)
+                    path_weight = current_path_weight + new_weight
+                    a_star_weight = path_weight + alpha * heuristic
+                    heapq.heappush(queue, ((a_star_weight, path_weight), vertex_list + [neighbour]))
+            expanded.add(vertex_to_expand)
+
+    def euclidean_distance(self, vertex1, vertex2):
+        vertex1 = ((vertex1.split('-')[0])).strip()
+        vertex2 = ((vertex2.split('-')[0])).strip()
+        return math.sqrt((self.cords[vertex1][0] - self.cords[vertex2][0])**2 + (self.cords[vertex1][1] - self.cords[vertex2][1])**2)
+
+    def visualize(self, labels = True):
+        color_map = []
         G = nx.Graph()
+        G.add_nodes_from(self.vertices())
         G.add_edges_from(self.edges(True))
-        nx.draw_networkx(G)
+        for vertex in self.vertices():
+            color_map.append('green' if vertex in self.result else 'blue')
+        nx.draw(G, node_color=color_map, with_labels=labels)
         plt.show()
 
     def __str__(self):
-        return f'Vertices: {self.vertices()}\n Edges: {self.edges()}'    
+        return f'Vertices: {self.vertices()}\n Edges: {self.edges()}'
