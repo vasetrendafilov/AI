@@ -148,6 +148,20 @@ class WeightedGraph(object):
                     edges.append((vertex, neighbour, weight))
         return edges
 
+    def remove_vertex(self, vertex_to_remove):
+        del self.graph[vertex_to_remove]
+        for vertex in self.vertices():
+            if vertex_to_remove in self.graph[vertex]:
+                del self.graph[vertex][vertex_to_remove]
+
+    def remove_edge(self, edge_to_remove, remove_reversed=True):
+        vertex1, vertex2 = edge_to_remove
+        if vertex2 in self[vertex1]:
+            del self[vertex1][vertex2]
+        if remove_reversed:
+            if vertex1 in self[vertex2]:
+                del self[vertex2][vertex1]
+
     def neighbours(self, vertex):
         return list(self.graph[vertex].items())
 
@@ -195,7 +209,7 @@ class WeightedGraph(object):
             if verbose:
                 print()
 
-    def a_star_search(self, starting_vertex, goal_vertex, alpha):
+    def a_star_search(self, starting_vertex, goal_vertex, alpha, beta):
         self.count = 0
         expanded = set()
         queue = [((0, 0), [starting_vertex])]
@@ -207,7 +221,7 @@ class WeightedGraph(object):
             self.count += 1
             if vertex_to_expand == goal_vertex:
                 self.result = vertex_list
-                return weight_tupple, vertex_list
+                return current_path_weight, vertex_list
 
             if vertex_to_expand in expanded:
                 continue
@@ -216,7 +230,7 @@ class WeightedGraph(object):
                 if neighbour not in expanded:
                     heuristic = self.euclidean_distance(neighbour, goal_vertex)
                     path_weight = current_path_weight + new_weight
-                    a_star_weight = path_weight + alpha * heuristic
+                    a_star_weight = path_weight + alpha * heuristic + beta * len(self.graph[neighbour])
                     heapq.heappush(queue, ((a_star_weight, path_weight), vertex_list + [neighbour]))
             expanded.add(vertex_to_expand)
 
